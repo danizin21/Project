@@ -1,0 +1,16 @@
+* 
+{
+    padding:0;
+    margin:0;
+}
+
+body {
+    background-image: url(../../UI/Themes/background-green.jpg);
+    background-position: left top;
+    background-repeat: repeat;
+    background-attachment: scroll, fixed;
+    background-blend-mode: luminosity;
+    
+    background-size: cover;
+
+}
