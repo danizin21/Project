@@ -1,93 +1,85 @@
 import { useEffect, useState } from "react";
-import { jwtDecode } from "jwt-decode";
+import jwtDecode from "jwt-decode"; // Corrigi a importação do jwtDecode
 import "./LoginPage.css";
 import Axios from "axios";
-import Cookies from 'js-cookie'
-
 import Icon from "../../UI/Icons/1144760.png";
 import erro from "../../UI/Icons/erro.png";
 import { useNavigate } from "react-router-dom";
-const navigate = useNavigate();
+
 function Login() {
-  //obtendo dados do usuario
-  var [user, setUser] = useState({});
+  // Obtendo dados do usuário
+  const [user, setUser] = useState({});
+  const navigate = useNavigate();
 
   function handleCallbackResponse(response) {
-    //imprime o id do email
-    // console.log("Encoded JWT ID token: " + response.credential);
-
-    //traduzir as informações pelo id com o decode
-    var userObject = jwtDecode(response.credential);
+    // Traduzir as informações pelo id com o decode
+    const userObject = jwtDecode(response.credential);
 
     console.log(userObject);
 
-    //verifica se usuario é da rural
+    // Verifica se usuário é da UFRRJ
     if (userObject.hd === "ufrrj.br") {
-      console.log("Usuario %s logado com sucesso", userObject.email);
-    } else if (userObject.hd !== "ufrrj.br") {
-      console.log(
-        "O email %s não pertence ao dominio da UFRRJ",
-        userObject.email
-      );
+      console.log("Usuário %s logado com sucesso", userObject.email);
+
+      // Setar as informações do usuário no objeto
+      setUser(userObject);
+
+      // Guardar info do usuário no localStorage
+      localStorage.setItem("_usuario_logado", JSON.stringify(userObject));
+    } else {
+      console.log("O email %s não pertence ao domínio da UFRRJ", userObject.email);
+      setUser(userObject);
     }
 
-    //setar as informaçoes do usuario no objeto
-    setUser((user) => {
-      return { ...user, ...userObject };
-    });
-    //esconder botao
+    // Esconder botão
     document.getElementById("signInDiv").hidden = true;
-    //Guardar info do usuario
-    localStorage.setItem("_usuario_logado", JSON.stringify(userObject));
-    console.log(userObject.name);
   }
 
-  //funcao de logout
+  // Função de logout
   function handleSignOut(event) {
-    //limpar usuario
+    // Limpar usuário
     setUser({});
+    localStorage.removeItem("_usuario_logado");
 
-    //reaparecer botao
+    // Reaparecer botão
     document.getElementById("signInDiv").hidden = false;
   }
-  
 
-  //usuario logado com sucesso, prosseguir pra proxima pagina
+  // Usuário logado com sucesso, prosseguir para próxima página
   function nextPage(event) {
-    //cria atributos com os valores do objeto
+    // Cria atributos com os valores do objeto
     const nomeUsuario = user.name;
     const emailUsuario = user.email;
-    console.log("ir para próxima página, %s", nomeUsuario);
+    console.log("Ir para próxima página, %s", nomeUsuario);
 
-
-    //cadastro provisorio
+    // Cadastro provisório
     Axios.post("http://localhost:3001/register", {
       email: emailUsuario,
       name: nomeUsuario,
     }).then((response) => {
-      Cookies.set('sada',emailUsuario);
-      //Cookies.set("token", response.data.token,{expires: ''});
-      navigate("/");
-      console.log(response)
+      console.log(response);
     });
-  
 
-    //carrega pagina de agendamento
-    navigate('AgendarHorario${nomeUsuario}${emailUsuario}');
+    // Carrega página de agendamento
+    navigate(`AgendarHorario?nome=${nomeUsuario}&email=${emailUsuario}`);
   }
 
-const navigate = useNavigate();
   useEffect(() => {
+    // Carregar o e-mail armazenado quando o componente é montado
+    const savedUser = localStorage.getItem("_usuario_logado");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+
     /* global google */
     google.accounts.id.initialize({
-      client_id:
-        "853325995754-9pe7828a2ma28l8teelef548n3dljfj2.apps.googleusercontent.com",
+      client_id: "853325995754-9pe7828a2ma28l8teelef548n3dljfj2.apps.googleusercontent.com",
       callback: handleCallbackResponse,
     });
 
-    //botao de login
-    //se Não tiver usuario logado: mostrar botão de Login;
-    //se tiver usuario logado: mostrar botão de Log out;
+    // Botão de login
+    // Se Não tiver usuário logado: mostrar botão de Login;
+    // Se tiver usuário logado: mostrar botão de Log out;
     google.accounts.id.renderButton(document.getElementById("signInDiv"), {
       theme: "outline",
       size: "large",
@@ -102,7 +94,7 @@ const navigate = useNavigate();
   return (
     <>
       <div className="Login">
-        {/* Se usuario nao tiver, logado, pede p conectar */}
+        {/* Se usuário não tiver logado, pede para conectar */}
         <div id="Login">
           {Object.keys(user).length === 0 && (
             <h3>
@@ -112,16 +104,16 @@ const navigate = useNavigate();
           )}
         </div>
 
-        {/* carrega o botao de login google*/}
+        {/* Carrega o botão de login Google */}
         <div id="signInDiv"></div>
-        {/* Botao de Log Out */}
+        {/* Botão de Log Out */}
         {Object.keys(user).length !== 0 && user.hd !== "ufrrj.br" && (
           <button id="Desconect" onClick={(e) => handleSignOut(e)}>
             DESCONECTAR
           </button>
         )}
-        {/* Email nao é da UFRRJ */}
-        {Object.keys(user).length !== 0 && user.hd === "ufrrj.br" && (
+        {/* Email não é da UFRRJ */}
+        {Object.keys(user).length !== 0 && user.hd !== "ufrrj.br" && (
           <div className="loginResponse">
             <div className="loginNegado">
               <img src={erro} alt="erroImage"></img> <br></br>
@@ -134,12 +126,11 @@ const navigate = useNavigate();
           </div>
         )}
 
-        {/* Usuario logado com sucesso */}
-        {Object.keys(user).length !== 0 && user.hd !== "ufrrj.br" && (
+        {/* Usuário logado com sucesso */}
+        {Object.keys(user).length !== 0 && user.hd === "ufrrj.br" && (
           <div className="loginResponse">
             <div className="saudacao">
-              <img id="userPic" src={user.picture} alt="PicImage"></img>{" "}
-              <br></br>
+              <img id="userPic" src={user.picture} alt="PicImage"></img> <br></br>
               Ola, {user.name}!
             </div>
 
@@ -156,4 +147,4 @@ const navigate = useNavigate();
   );
 }
 
-export default Login;
+export default Login;
